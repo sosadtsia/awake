@@ -2,6 +2,11 @@
 
 A command-line tool for macOS that prevents your Mac from sleeping.
 
+## Requirements
+
+- macOS (relies on the built-in `caffeinate` command)
+- Go 1.18 or higher (for building from source)
+
 ## Installation
 
 ### Option 1: Manual Installation
@@ -37,6 +42,29 @@ A command-line tool for macOS that prevents your Mac from sleeping.
 go install github.com/sosadtsia/awake@latest
 ```
 This automatically installs the binary to your `$GOPATH/bin` directory (usually `~/go/bin`). Ensure this directory is in your PATH.
+
+### Option 3: Download Pre-built Binary
+
+You can download pre-built binaries for macOS from the [Releases](https://github.com/sosadtsia/awake/releases) page. Choose from:
+
+- **darwin-amd64**: For Intel Macs
+- **darwin-arm64**: For Apple Silicon Macs (M1/M2/M3)
+- **darwin-universal**: Universal binary that works on both Intel and Apple Silicon Macs
+
+Compressed versions (`.gz`) of each binary are also available for faster downloads.
+
+After downloading, make the binary executable and move it to a location in your PATH:
+
+```bash
+# For regular binaries
+chmod +x awake-v*-darwin-*
+mv awake-v*-darwin-* /usr/local/bin/awake
+
+# For compressed (.gz) binaries
+gunzip awake-v*-darwin-*.gz
+chmod +x awake-v*-darwin-*
+mv awake-v*-darwin-* /usr/local/bin/awake
+```
 
 ### Verify Installation
 
@@ -126,6 +154,26 @@ When run with the `-b` or `-background` flag, awake will:
 2. Print the PID of the background process
 3. Exit the parent process, leaving the detached process running
 4. To stop a background process, use `pkill awake`
+
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org/) (SemVer).
+
+- **Major version** increments denote incompatible API changes
+- **Minor version** increments denote added functionality in a backward-compatible manner
+- **Patch version** increments denote backward-compatible bug fixes
+
+Release tags follow the `vX.Y.Z` format (e.g., `v1.0.0`).
+
+## Releases
+
+New releases are automatically created via GitHub Actions when commits following the [Conventional Commits](https://www.conventionalcommits.org/) format are pushed to the main branch. For example:
+
+- `feat: ...` - Triggers a minor version bump
+- `fix: ...` - Triggers a patch version bump
+- `feat!: ...` or including `BREAKING CHANGE:` in commit message - Triggers a major version bump
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on the commit message format.
 
 ## Development
 

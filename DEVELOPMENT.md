@@ -100,3 +100,4 @@ If any of these checks fail, the commit will be aborted.
 - `main_test.go` - Tests for the application
 - `.githooks/` - Git hooks
 - `Taskfile.yml` - Task definitions for development workflows
+- `.github/workflows/` - GitHub Actions workflow definitions
