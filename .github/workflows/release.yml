@@ -42,7 +42,7 @@ jobs:
           fetch-depth: 0
 
       - name: Get token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         id: app-token
         with:
           app-id: ${{ secrets.RENOVATE_APP_ID }}
@@ -115,7 +115,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Get token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         id: app-token
         with:
           app-id: ${{ secrets.RENOVATE_APP_ID }}
@@ -125,7 +125,14 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'
+          go-version: '1.24'
+
+      - name: Initialize Go modules if needed
+        run: |
+          if [ ! -f "go.sum" ]; then
+            echo "Initializing Go modules"
+            go mod tidy
+          fi
 
       - name: Set version
         id: set_version
@@ -145,6 +152,8 @@ jobs:
           # Try different regex patterns to find a version string in main.go
           if grep -q 'appVersion = "[0-9]\+\.[0-9]\+\.[0-9]\+"' main.go; then
             sed -i '' "s/appVersion = \"[0-9]\+\.[0-9]\+\.[0-9]\+.*\"/appVersion = \"${VERSION#v}\"/" main.go
+          elif grep -q 'const appVersion = "[0-9]\+\.[0-9]\+\.[0-9]\+"' main.go; then
+            sed -i '' "s/const appVersion = \"[0-9]\+\.[0-9]\+\.[0-9]\+.*\"/const appVersion = \"${VERSION#v}\"/" main.go
           elif grep -q 'version = "[0-9]\+\.[0-9]\+\.[0-9]\+"' main.go; then
             sed -i '' "s/version = \"[0-9]\+\.[0-9]\+\.[0-9]\+.*\"/version = \"${VERSION#v}\"/" main.go
           else
