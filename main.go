@@ -19,12 +19,11 @@ const (
 
 // CLI options
 type options struct {
-	quiet      bool
-	debug      bool
-	version    bool
-	help       bool
-	foreground bool
-	duration   time.Duration
+	quiet    bool
+	debug    bool
+	version  bool
+	help     bool
+	duration time.Duration
 }
 
 func main() {
