@@ -115,8 +115,14 @@ jobs:
             fi
           fi
 
-          # Update version in source code
-          sed -i '' "s/appVersion = \"[0-9]\+\.[0-9]\+\.[0-9]\+.*\"/appVersion = \"${VERSION#v}\"/" main.go
+          # Try different regex patterns to find a version string in main.go
+          if grep -q 'appVersion = "[0-9]\+\.[0-9]\+\.[0-9]\+"' main.go; then
+            sed -i '' "s/appVersion = \"[0-9]\+\.[0-9]\+\.[0-9]\+.*\"/appVersion = \"${VERSION#v}\"/" main.go
+          elif grep -q 'version = "[0-9]\+\.[0-9]\+\.[0-9]\+"' main.go; then
+            sed -i '' "s/version = \"[0-9]\+\.[0-9]\+\.[0-9]\+.*\"/version = \"${VERSION#v}\"/" main.go
+          else
+            echo "No version string found in main.go, will create a .version file instead"
+          fi
 
       - name: Build for macOS (Intel)
         run: |
@@ -159,7 +165,16 @@ jobs:
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add main.go
+
+          # Check if main.go was actually modified
+          if git diff --exit-code main.go; then
+            echo "No changes to main.go, creating a version marker file"
+            echo "${{ env.VERSION }}" > .version
+            git add .version
+          else
+            git add main.go
+          fi
+
           git commit -m "chore: bump version to ${{ env.VERSION }}"
 
           # Use the GitHub App token for pushing
