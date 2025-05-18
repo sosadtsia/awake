@@ -19,11 +19,73 @@ const (
 
 // CLI options
 type options struct {
-	quiet    bool
-	debug    bool
-	version  bool
-	help     bool
-	duration time.Duration
+	quiet      bool
+	debug      bool
+	version    bool
+	help       bool
+	duration   time.Duration
+	background bool
+}
+
+// runInBackground starts a detached process and exits the current one
+func runInBackground(opts options, logger *logger) {
+	// Only do this if we're not already a background process
+	if os.Getenv("AWAKE_BACKGROUND") != "1" {
+		logger.Debug("Starting background mode")
+
+		// Get the current executable path
+		executable, err := os.Executable()
+		if err != nil {
+			logger.Error("Error getting executable path: %v", err)
+			os.Exit(1)
+		}
+
+		// Prepare command for background execution
+		args := []string{}
+		// Copy all args except the background flag
+		for _, arg := range os.Args[1:] {
+			if arg != "-background" && arg != "-b" {
+				args = append(args, arg)
+			}
+		}
+
+		// Add the quiet flag if not already present
+		hasQuiet := false
+		for _, arg := range args {
+			if arg == "-q" || arg == "-quiet" {
+				hasQuiet = true
+				break
+			}
+		}
+		if !hasQuiet {
+			args = append(args, "-q")
+		}
+
+		logger.Debug("Spawning background process with args: %v", args)
+
+		// Create a new command with the same binary and args
+		cmd := exec.Command(executable, args...)
+		// Set environment variable to prevent infinite recursion
+		cmd.Env = append(os.Environ(), "AWAKE_BACKGROUND=1")
+		// Detach process
+		cmd.Stdin = nil
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+
+		if err := cmd.Start(); err != nil {
+			logger.Error("Failed to start background process: %v", err)
+			os.Exit(1)
+		}
+
+		logger.Info("Awake is now running in the background (PID: %d)", cmd.Process.Pid)
+		if opts.duration > 0 {
+			logger.Info("Mac will stay awake for %s", opts.duration)
+			logger.Info("Use 'pkill awake' to stop it early if needed")
+		} else {
+			logger.Info("Mac will stay awake until you run 'pkill awake'")
+		}
+		os.Exit(0)
+	}
 }
 
 func main() {
@@ -43,6 +105,12 @@ func main() {
 
 	// Initialize logger based on options
 	logger := newLogger(opts.quiet, opts.debug)
+
+	// Handle background mode if requested
+	if opts.background {
+		runInBackground(opts, logger)
+		// if we're still here, we're the child process
+	}
 
 	// Check for caffeinate
 	path, err := exec.LookPath("caffeinate")
@@ -118,6 +186,9 @@ func parseFlags() options {
 	flag.DurationVar(&opts.duration, "time", 0, "Duration to prevent sleep (e.g. 1h30m)")
 	flag.DurationVar(&opts.duration, "t", 0, "Duration to prevent sleep (shorthand)")
 
+	flag.BoolVar(&opts.background, "background", false, "Run in background mode")
+	flag.BoolVar(&opts.background, "b", false, "Run in background mode (shorthand)")
+
 	// Create custom usage message
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n\n", appName)
@@ -128,6 +199,8 @@ func parseFlags() options {
 		fmt.Fprintf(os.Stderr, "  %s                         # Prevent sleep until Ctrl+C\n", appName)
 		fmt.Fprintf(os.Stderr, "  %s -t 2h                   # Prevent sleep for 2 hours\n", appName)
 		fmt.Fprintf(os.Stderr, "  %s -q -t 30m               # Quietly prevent sleep for 30 minutes\n", appName)
+		fmt.Fprintf(os.Stderr, "  %s -b                      # Run in background indefinitely (use 'pkill awake' to stop)\n", appName)
+		fmt.Fprintf(os.Stderr, "  %s -b -t 2h                # Run in background for 2 hours\n", appName)
 	}
 
 	flag.Parse()

@@ -66,6 +66,21 @@ Alternatively, you can run both with a single command:
 task precommit
 ```
 
+## Project Features
+
+### Background Mode
+
+The application supports running in the background (detached from the terminal) using the `-b` or `-background` flag. When this flag is used:
+
+1. The application spawns a new detached process with the same parameters (minus the background flag)
+2. The parent process exits, leaving the child running in the background
+3. The background process can be stopped using `pkill awake`
+
+Implementation details:
+- The background mode uses the `os/exec` package to spawn a detached process
+- It sets the `AWAKE_BACKGROUND=1` environment variable to prevent recursive spawning
+- The detached process has stdin, stdout, and stderr set to nil to fully detach from the terminal
+
 ## Git Hooks
 
 ### Pre-commit Hook

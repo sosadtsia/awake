@@ -61,6 +61,7 @@ awake [options]
 | `-version` | `-v` | Show version information |
 | `-help` | `-h` | Show help information |
 | `-time DURATION` | `-t DURATION` | Set a duration to prevent sleep (e.g., "2h", "30m", "1h30m") |
+| `-background` | `-b` | Run in background mode (detached from terminal) |
 
 ### Examples
 
@@ -79,6 +80,16 @@ Quietly prevent sleep for 30 minutes:
 awake -q -t 30m
 ```
 
+Run in background mode (detached from terminal):
+```
+awake -b
+```
+
+Run in background mode for 2 hours:
+```
+awake -b -t 2h
+```
+
 Show debug information:
 ```
 awake -d
@@ -89,21 +100,32 @@ awake -d
 This tool uses the built-in macOS `caffeinate` command to prevent your Mac from sleeping. The tool provides:
 
 - Time-limited operation (automatically exit after a specified duration)
-- Quiet mode for background operation
+- Background mode for detached operation
+- Quiet mode for no terminal output
 - Debug logging for troubleshooting
 - Proper signal handling for clean shutdown
 
 ## How It Works
 
 1. Parses command-line options to determine behavior
-2. Runs caffeinate with appropriate flags:
+2. When run in background mode, it spawns a detached copy of itself and exits
+3. Runs caffeinate with appropriate flags:
    - `-d` to prevent display sleep
    - `-i` to prevent system idle sleep
    - `-t` when a time limit is specified
-3. Properly terminates the caffeinate process when:
+4. Properly terminates the caffeinate process when:
    - The specified duration elapses
-   - The user presses Ctrl+C
+   - The user presses Ctrl+C (in foreground mode)
    - The process receives a termination signal
+
+## Background Mode
+
+When run with the `-b` or `-background` flag, awake will:
+
+1. Create a detached copy of itself with the same parameters (minus the `-b` flag)
+2. Print the PID of the background process
+3. Exit the parent process, leaving the detached process running
+4. To stop a background process, use `pkill awake`
 
 ## Development
 
