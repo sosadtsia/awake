@@ -1,0 +1,145 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Is this a prerelease?'
+        required: false
+        default: false
+        type: boolean
+
+  push:
+    branches:
+      - main
+    paths:
+      - 'main.go'
+    # Only run on semantic versioning commit messages
+    # Example: "feat: add background mode" or "fix: correct duration handling"
+    # This will require commit messages following conventional commits format
+    # to trigger automatic version bumping
+
+jobs:
+  detect_version:
+    name: Detect Version
+    runs-on: ubuntu-latest
+    # Skip this job if workflow was manually triggered (we already have version)
+    if: github.event_name != 'workflow_dispatch'
+    outputs:
+      new_version: ${{ steps.semver.outputs.new_version }}
+      needs_release: ${{ steps.semver.outputs.needs_release }}
+      release_type: ${{ steps.semver.outputs.release_type }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate GitHub App token
+        id: generate-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.RENOVATE_APP_ID }}
+          private_key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
+
+      - name: Detect Semantic Version
+        id: semver
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ steps.generate-token.outputs.token }}
+          default_bump: patch
+          release_branches: main
+          dry_run: true
+
+  build:
+    name: Build and Release
+    needs: detect_version
+    if: github.event_name == 'workflow_dispatch' || needs.detect_version.outputs.needs_release == 'true'
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate GitHub App token
+        id: generate-token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.RENOVATE_APP_ID }}
+          private_key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Set version
+        id: set_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+            echo "PRERELEASE=${{ github.event.inputs.prerelease }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${{ needs.detect_version.outputs.new_version }}" >> $GITHUB_ENV
+            if [[ "${{ needs.detect_version.outputs.release_type }}" == *"pre"* ]]; then
+              echo "PRERELEASE=true" >> $GITHUB_ENV
+            else
+              echo "PRERELEASE=false" >> $GITHUB_ENV
+            fi
+          fi
+
+          # Update version in source code
+          sed -i '' "s/appVersion = \"[0-9]\+\.[0-9]\+\.[0-9]\+.*\"/appVersion = \"${VERSION#v}\"/" main.go
+
+      - name: Build for macOS (Intel)
+        run: |
+          GOOS=darwin GOARCH=amd64 go build -o awake-${{ env.VERSION }}-darwin-amd64 -ldflags="-X main.appVersion=${VERSION#v}"
+
+      - name: Build for macOS (Apple Silicon)
+        run: |
+          GOOS=darwin GOARCH=arm64 go build -o awake-${{ env.VERSION }}-darwin-arm64 -ldflags="-X main.appVersion=${VERSION#v}"
+
+      - name: Build Universal Binary
+        run: |
+          lipo -create -output awake-${{ env.VERSION }}-darwin-universal awake-${{ env.VERSION }}-darwin-amd64 awake-${{ env.VERSION }}-darwin-arm64
+
+      - name: Compress binaries
+        run: |
+          gzip -9 -c awake-${{ env.VERSION }}-darwin-amd64 > awake-${{ env.VERSION }}-darwin-amd64.gz
+          gzip -9 -c awake-${{ env.VERSION }}-darwin-arm64 > awake-${{ env.VERSION }}-darwin-arm64.gz
+          gzip -9 -c awake-${{ env.VERSION }}-darwin-universal > awake-${{ env.VERSION }}-darwin-universal.gz
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: Release ${{ env.VERSION }}
+          draft: false
+          prerelease: ${{ env.PRERELEASE }}
+          generate_release_notes: true
+          files: |
+            awake-${{ env.VERSION }}-darwin-amd64
+            awake-${{ env.VERSION }}-darwin-arm64
+            awake-${{ env.VERSION }}-darwin-universal
+            awake-${{ env.VERSION }}-darwin-amd64.gz
+            awake-${{ env.VERSION }}-darwin-arm64.gz
+            awake-${{ env.VERSION }}-darwin-universal.gz
+          token: ${{ steps.generate-token.outputs.token }}
+
+      - name: Commit version update
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add main.go
+          git commit -m "chore: bump version to ${{ env.VERSION }}"
+
+          # Use the GitHub App token for pushing
+          git remote set-url origin https://x-access-token:${{ steps.generate-token.outputs.token }}@github.com/${{ github.repository }}.git
+          git push
