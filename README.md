@@ -104,3 +104,30 @@ This tool uses the built-in macOS `caffeinate` command to prevent your Mac from 
    - The specified duration elapses
    - The user presses Ctrl+C
    - The process receives a termination signal
+
+## Development
+
+### Pre-commit Hooks
+
+This project uses git pre-commit hooks to ensure code quality. The hooks:
+
+1. Check if golangci-lint is installed
+2. Run linting with golangci-lint
+3. Run Go tests
+
+When you clone the repository, enable the pre-commit hook:
+
+```bash
+# Make the pre-commit hook executable
+chmod +x .git/hooks/pre-commit
+```
+
+If you don't have golangci-lint installed, you can install it with:
+
+```bash
+# macOS
+brew install golangci-lint
+
+# Other platforms
+# See https://golangci-lint.run/usage/install/
+```
