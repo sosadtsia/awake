@@ -201,7 +201,6 @@ func parseFlags() options {
 		fmt.Fprintf(os.Stderr, "  %s -q -t 30m               # Quietly prevent sleep for 30 minutes\n", appName)
 		fmt.Fprintf(os.Stderr, "  %s -b                      # Run in background indefinitely (use 'pkill awake' to stop)\n", appName)
 		fmt.Fprintf(os.Stderr, "  %s -b -t 2h                # Run in background for 2 hours\n", appName)
-		fmt.Fprintf(os.Stderr, "  %s -b -t 2h -q             # Run in background for 2 hours, quietly\n", appName)
 	}
 
 	flag.Parse()
