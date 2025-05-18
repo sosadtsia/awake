@@ -149,16 +149,30 @@ jobs:
             fi
           fi
 
-          # Try different regex patterns to find a version string in main.go
-          if grep -q 'appVersion = "[0-9]\+\.[0-9]\+\.[0-9]\+"' main.go; then
+          echo "Updating version in main.go to ${VERSION#v}"
+
+          # Debug - show the current state of the version
+          grep -A 3 "Version information" main.go
+
+          # Updated approach for const block
+          if grep -q "const (" main.go && grep -q "appVersion = " main.go; then
+            echo "Found const block with appVersion"
+            # Use perl for more flexibility with multiline patterns
+            perl -i -p0e 's/appVersion = "[0-9]+\.[0-9]+\.[0-9]+"/appVersion = "'${VERSION#v}'"/s' main.go
+            # Show the change
+            grep -A 3 "Version information" main.go
+          elif grep -q 'appVersion = "[0-9]\+\.[0-9]\+\.[0-9]\+"' main.go; then
             sed -i '' "s/appVersion = \"[0-9]\+\.[0-9]\+\.[0-9]\+.*\"/appVersion = \"${VERSION#v}\"/" main.go
           elif grep -q 'const appVersion = "[0-9]\+\.[0-9]\+\.[0-9]\+"' main.go; then
             sed -i '' "s/const appVersion = \"[0-9]\+\.[0-9]\+\.[0-9]\+.*\"/const appVersion = \"${VERSION#v}\"/" main.go
           elif grep -q 'version = "[0-9]\+\.[0-9]\+\.[0-9]\+"' main.go; then
             sed -i '' "s/version = \"[0-9]\+\.[0-9]\+\.[0-9]\+.*\"/version = \"${VERSION#v}\"/" main.go
           else
-            echo "No version string found in main.go, will create a .version file instead"
+            echo "No version string found in main.go, creating a .version file instead"
           fi
+
+          # Check if the update worked
+          git diff main.go || echo "No changes detected in main.go"
 
       - name: Build for macOS (Intel)
         run: |
