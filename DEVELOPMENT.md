@@ -56,10 +56,15 @@ task lint
 You can manually run the same checks that the pre-commit hook runs:
 
 ```
-task precommit
+task lint   # Run the linter
+task test   # Run the tests
 ```
 
-This will run both the linter and tests.
+Alternatively, you can run both with a single command:
+
+```
+task precommit
+```
 
 ## Git Hooks
 
@@ -69,7 +74,8 @@ The pre-commit hook runs automatically before each commit and:
 
 1. Checks if Task is installed
 2. Checks if golangci-lint is installed
-3. Uses `task precommit` to run the linter and tests
+3. Runs `task lint` to check code quality
+4. Runs `task test` to verify tests pass
 
 If any of these checks fail, the commit will be aborted.
 
@@ -78,4 +84,4 @@ If any of these checks fail, the commit will be aborted.
 - `main.go` - Main application code
 - `main_test.go` - Tests for the application
 - `.githooks/` - Git hooks
-- `scripts/` - Development and automation scripts
+- `Taskfile.yml` - Task definitions for development workflows

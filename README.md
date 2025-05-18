@@ -135,14 +135,11 @@ This project uses git pre-commit hooks to ensure code quality. The hooks:
 
 #### Installing the hooks
 
-Run the setup script to install the hooks:
+Set up the git hooks using Task:
 
 ```bash
 # Using Task
 task hooks
-
-# Or directly
-./scripts/setup-hooks.sh
 ```
 
 This will configure git to use the hooks in the `.githooks` directory.
@@ -154,7 +151,4 @@ The pre-commit hook requires golangci-lint. If you don't have it installed, you 
 ```bash
 # macOS
 brew install golangci-lint
-
-# Other platforms
-# See https://golangci-lint.run/usage/install/
 ```
