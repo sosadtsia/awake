@@ -26,6 +26,7 @@ func TestParseFlags(t *testing.T) {
 		expectedHelp  bool
 		expectedVer   bool
 		expectedDur   time.Duration
+		expectedBg    bool
 	}{
 		{
 			name:          "default",
@@ -35,6 +36,7 @@ func TestParseFlags(t *testing.T) {
 			expectedHelp:  false,
 			expectedVer:   false,
 			expectedDur:   0,
+			expectedBg:    false,
 		},
 		{
 			name:          "quiet mode",
@@ -44,6 +46,7 @@ func TestParseFlags(t *testing.T) {
 			expectedHelp:  false,
 			expectedVer:   false,
 			expectedDur:   0,
+			expectedBg:    false,
 		},
 		{
 			name:          "debug mode",
@@ -53,6 +56,7 @@ func TestParseFlags(t *testing.T) {
 			expectedHelp:  false,
 			expectedVer:   false,
 			expectedDur:   0,
+			expectedBg:    false,
 		},
 		{
 			name:          "with duration",
@@ -62,6 +66,7 @@ func TestParseFlags(t *testing.T) {
 			expectedHelp:  false,
 			expectedVer:   false,
 			expectedDur:   2 * time.Hour,
+			expectedBg:    false,
 		},
 		{
 			name:          "help",
@@ -71,6 +76,7 @@ func TestParseFlags(t *testing.T) {
 			expectedHelp:  true,
 			expectedVer:   false,
 			expectedDur:   0,
+			expectedBg:    false,
 		},
 		{
 			name:          "version",
@@ -80,6 +86,27 @@ func TestParseFlags(t *testing.T) {
 			expectedHelp:  false,
 			expectedVer:   true,
 			expectedDur:   0,
+			expectedBg:    false,
+		},
+		{
+			name:          "background mode",
+			args:          []string{"awake", "-b"},
+			expectedQuiet: false,
+			expectedDebug: false,
+			expectedHelp:  false,
+			expectedVer:   false,
+			expectedDur:   0,
+			expectedBg:    true,
+		},
+		{
+			name:          "background shorthand",
+			args:          []string{"awake", "-background"},
+			expectedQuiet: false,
+			expectedDebug: false,
+			expectedHelp:  false,
+			expectedVer:   false,
+			expectedDur:   0,
+			expectedBg:    true,
 		},
 		{
 			name:          "combined",
@@ -89,6 +116,27 @@ func TestParseFlags(t *testing.T) {
 			expectedHelp:  false,
 			expectedVer:   false,
 			expectedDur:   30 * time.Minute,
+			expectedBg:    false,
+		},
+		{
+			name:          "background with duration",
+			args:          []string{"awake", "-b", "-t", "1h"},
+			expectedQuiet: false,
+			expectedDebug: false,
+			expectedHelp:  false,
+			expectedVer:   false,
+			expectedDur:   1 * time.Hour,
+			expectedBg:    true,
+		},
+		{
+			name:          "all options",
+			args:          []string{"awake", "-q", "-d", "-t", "30m", "-b"},
+			expectedQuiet: true,
+			expectedDebug: true,
+			expectedHelp:  false,
+			expectedVer:   false,
+			expectedDur:   30 * time.Minute,
+			expectedBg:    true,
 		},
 	}
 
@@ -118,6 +166,9 @@ func TestParseFlags(t *testing.T) {
 			}
 			if opts.duration != tc.expectedDur {
 				t.Errorf("duration: expected %v, got %v", tc.expectedDur, opts.duration)
+			}
+			if opts.background != tc.expectedBg {
+				t.Errorf("background: expected %v, got %v", tc.expectedBg, opts.background)
 			}
 		})
 	}
