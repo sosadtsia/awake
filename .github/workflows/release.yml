@@ -18,6 +18,7 @@ on:
       - main
     paths:
       - 'main.go'
+      - 'main_test.go'
     # Only run on semantic versioning commit messages
     # Example: "feat: add background mode" or "fix: correct duration handling"
     # This will require commit messages following conventional commits format
