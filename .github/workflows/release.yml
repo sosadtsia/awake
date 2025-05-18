@@ -75,7 +75,14 @@ jobs:
           github_token: ${{ steps.app-token.outputs.token }}
           default_bump: patch
           release_branches: main
-          dry_run: true
+          dry_run: false
+
+      - name: Debug Semantic Version Output
+        if: steps.check_tags.outputs.create_initial_tag != 'true'
+        run: |
+          echo "New Version: ${{ steps.semver.outputs.new_version }}"
+          echo "Needs Release: ${{ steps.semver.outputs.needs_release }}"
+          echo "Release Type: ${{ steps.semver.outputs.release_type }}"
 
   build:
     name: Build and Release
