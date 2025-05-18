@@ -31,9 +31,9 @@ jobs:
     # Skip this job if workflow was manually triggered (we already have version)
     if: github.event_name != 'workflow_dispatch'
     outputs:
-      new_version: ${{ steps.semver.outputs.new_version }}
-      needs_release: ${{ steps.semver.outputs.needs_release }}
-      release_type: ${{ steps.semver.outputs.release_type }}
+      new_version: ${{ steps.semver.outputs.new_version || steps.initial_tag.outputs.version }}
+      needs_release: ${{ steps.semver.outputs.needs_release || steps.check_tags.outputs.create_initial_tag }}
+      release_type: ${{ steps.semver.outputs.release_type || 'patch' }}
 
     steps:
       - name: Checkout code
@@ -49,8 +49,27 @@ jobs:
           private-key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
+      - name: Check for existing tags
+        id: check_tags
+        run: |
+          if [ -z "$(git tag -l 'v*')" ]; then
+            echo "No semver tags found, will create initial tag"
+            echo "create_initial_tag=true" >> $GITHUB_OUTPUT
+          else
+            echo "Found existing semver tags"
+            echo "create_initial_tag=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create initial tag
+        if: steps.check_tags.outputs.create_initial_tag == 'true'
+        id: initial_tag
+        run: |
+          echo "version=v0.0.1" >> $GITHUB_OUTPUT
+          echo "Initial version will be v0.0.1"
+
       - name: Detect Semantic Version
         id: semver
+        if: steps.check_tags.outputs.create_initial_tag != 'true'
         uses: mathieudutour/github-tag-action@v6.1
         with:
           github_token: ${{ steps.app-token.outputs.token }}
