@@ -32,7 +32,7 @@ jobs:
     if: github.event_name != 'workflow_dispatch'
     outputs:
       new_version: ${{ steps.semver.outputs.new_version || steps.initial_tag.outputs.version }}
-      needs_release: ${{ steps.semver.outputs.needs_release || steps.check_tags.outputs.create_initial_tag }}
+      needs_release: ${{ steps.set_release_needed.outputs.needs_release || steps.check_tags.outputs.create_initial_tag }}
       release_type: ${{ steps.semver.outputs.release_type || 'patch' }}
 
     steps:
@@ -77,17 +77,37 @@ jobs:
           release_branches: main
           dry_run: false
 
+      - name: Set Release Needed
+        if: steps.check_tags.outputs.create_initial_tag != 'true' && steps.semver.outputs.new_version != ''
+        id: set_release_needed
+        run: |
+          echo "needs_release=true" >> $GITHUB_OUTPUT
+
       - name: Debug Semantic Version Output
         if: steps.check_tags.outputs.create_initial_tag != 'true'
         run: |
           echo "New Version: ${{ steps.semver.outputs.new_version }}"
-          echo "Needs Release: ${{ steps.semver.outputs.needs_release }}"
+          echo "Needs Release (from semver): ${{ steps.semver.outputs.needs_release }}"
+          echo "Needs Release (our setting): ${{ steps.set_release_needed.outputs.needs_release }}"
           echo "Release Type: ${{ steps.semver.outputs.release_type }}"
+
+      - name: Final Output Values
+        run: |
+          echo "Final new_version: ${{ steps.semver.outputs.new_version || steps.initial_tag.outputs.version }}"
+          echo "Final needs_release: ${{ steps.set_release_needed.outputs.needs_release || steps.check_tags.outputs.create_initial_tag }}"
+          if [[ "${{ steps.semver.outputs.new_version }}" != "" ]]; then
+            echo "Detected new version, should trigger build"
+          fi
+          if [[ "${{ steps.set_release_needed.outputs.needs_release }}" == "true" ]]; then
+            echo "Release needed is true, should trigger build"
+          fi
 
   build:
     name: Build and Release
     needs: detect_version
-    if: github.event_name == 'workflow_dispatch' || needs.detect_version.outputs.needs_release == 'true'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      needs.detect_version.outputs.new_version != ''
     runs-on: macos-latest
 
     steps:
