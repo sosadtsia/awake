@@ -107,6 +107,24 @@ This tool uses the built-in macOS `caffeinate` command to prevent your Mac from 
 
 ## Development
 
+For detailed development instructions, please see [DEVELOPMENT.md](DEVELOPMENT.md).
+
+### Task Runner
+
+This project uses [Task](https://taskfile.dev) for managing development tasks:
+
+```bash
+# Install Task
+go install github.com/go-task/task/v3/cmd/task@latest
+
+# Run tasks
+task build    # Build the application
+task test     # Run tests
+task lint     # Run linter
+task hooks    # Setup git hooks
+task clean    # Clean build artifacts
+```
+
 ### Pre-commit Hooks
 
 This project uses git pre-commit hooks to ensure code quality. The hooks:
@@ -115,14 +133,23 @@ This project uses git pre-commit hooks to ensure code quality. The hooks:
 2. Run linting with golangci-lint
 3. Run Go tests
 
-When you clone the repository, enable the pre-commit hook:
+#### Installing the hooks
+
+Run the setup script to install the hooks:
 
 ```bash
-# Make the pre-commit hook executable
-chmod +x .git/hooks/pre-commit
+# Using Task
+task hooks
+
+# Or directly
+./scripts/setup-hooks.sh
 ```
 
-If you don't have golangci-lint installed, you can install it with:
+This will configure git to use the hooks in the `.githooks` directory.
+
+#### Requirements
+
+The pre-commit hook requires golangci-lint. If you don't have it installed, you can install it with:
 
 ```bash
 # macOS

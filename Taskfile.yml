@@ -1,0 +1,36 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the application
+    cmds:
+      - go build -o awake
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test -v ./...
+
+  lint:
+    desc: Run linter
+    cmds:
+      - golangci-lint run
+
+  precommit:
+    desc: Run pre-commit checks (lint and test)
+    deps: [lint, test]
+
+  hooks:
+    desc: Setup git hooks
+    cmds:
+      - ./scripts/setup-hooks.sh
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -f awake
+      - go clean
+
+  default:
+    desc: Default task
+    deps: [build]
