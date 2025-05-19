@@ -70,7 +70,7 @@ jobs:
       - name: Detect Semantic Version
         id: semver
         if: steps.check_tags.outputs.create_initial_tag != 'true'
-        uses: mathieudutour/github-tag-action@v6.1
+        uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ steps.app-token.outputs.token }}
           default_bump: patch
