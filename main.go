@@ -14,7 +14,7 @@ import (
 // Version information
 const (
 	appName    = "awake"
-	appVersion = "0.6.0"
+	appVersion = "0.6.1"
 )
 
 // CLI options
